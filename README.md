@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # mindcourse
 
 A new Flutter project.
@@ -14,3 +15,7 @@ A few resources to get you started if this is your first Flutter project:
 For help getting started with Flutter development, view the
 [online documentation](https://docs.flutter.dev/), which offers tutorials,
 samples, guidance on mobile development, and a full API reference.
+=======
+# MindCourse
+An application that reminds you your unfinished courses.
+>>>>>>> f89d7aa1f0106ac579112295d811df68c4aff225

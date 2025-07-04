@@ -1,6 +1,7 @@
 import 'package:shared_preferences/shared_preferences.dart';
 
 class Subject {
+  
   int? _subjectId;
   late String _name;
   late String _description;
@@ -82,4 +83,6 @@ class Subject {
   String toString() {
     return 'Subject{subjectId: $_subjectId, name: $_name, userId: $_userId, semester: $_semester}';
   }
+
+  
 }

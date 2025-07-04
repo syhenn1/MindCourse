@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:mindcourse/helpers/dbhelper.dart';
 import 'package:mindcourse/ui/login.dart';
 import 'package:mindcourse/ui/home.dart';
 import 'package:mindcourse/helpers/session_manager.dart';
 
+final DbHelper dbHelper = DbHelper();
+
 void main() async {
-  // Pastikan semua binding Flutter telah diinisialisasi sebelum menjalankan aplikasi.
   WidgetsFlutterBinding.ensureInitialized();
   runApp(MyApp());
 }
@@ -42,8 +44,7 @@ class _AuthGateState extends State<AuthGate> {
   @override
   void initState() {
     super.initState();
-    // Menggunakan addPostFrameCallback untuk memastikan navigasi terjadi setelah
-    // frame pertama selesai di-render, yang lebih aman.
+    dbHelper.autoUpdateSemester();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkSessionAndNavigate();
     });
@@ -71,10 +72,6 @@ class _AuthGateState extends State<AuthGate> {
   @override
   Widget build(BuildContext context) {
     // Selama pengecekan sesi, tampilkan layar loading sederhana.
-    return Scaffold(
-      body: Center(
-        child: CircularProgressIndicator(),
-      ),
-    );
+    return Scaffold(body: Center(child: CircularProgressIndicator()));
   }
 }

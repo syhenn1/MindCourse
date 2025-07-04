@@ -34,7 +34,12 @@ class DbHelper {
         password TEXT,
         date_added DATE,
         is_deleted INTEGER,
-        semester INTEGER
+        semester INTEGER,
+        semester_end DATE,
+        notification_sound TEXT,
+        UNIQUE(email),
+        UNIQUE(phone),
+        UNIQUE(name)
       )
     ''');
 
@@ -56,10 +61,12 @@ class DbHelper {
         course_id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT,
         description TEXT,
-        deadline DATE,
+        deadline_day DATE,
+        deadline_time TEXT,
         status TEXT,
         date_added DATE,
         is_deleted INTEGER,
+        is_done INTEGER,
         user_id INTEGER,
         subject_id INTEGER,
         FOREIGN KEY (user_id) REFERENCES users(user_id),
@@ -189,6 +196,19 @@ class DbHelper {
     return null;
   }
 
+  Future<User?> getUserByName(String name) async {
+    Database db = await this.database;
+    List<Map<String, dynamic>> maps = await db.query(
+      'users',
+      where: 'name = ?',
+      whereArgs: [name],
+    );
+    if (maps.isNotEmpty) {
+      return User.fromMap(maps.first);
+    }
+    return null;
+  }
+
   Future<User?> getUserById(int id) async {
     final db = await database;
     final List<Map<String, dynamic>> maps = await db.query(
@@ -203,5 +223,91 @@ class DbHelper {
     }
     // Mengembalikan null jika tidak ada pengguna dengan ID tersebut.
     return null;
+  }
+
+  Future<List<Map<String, dynamic>>> getCoursesByUserId(int userId) async {
+    final db = await database;
+    return await db.query(
+      'courses',
+      where: 'user_id = ? AND is_deleted = 0',
+      whereArgs: [userId],
+      orderBy: 'deadline_day ASC, deadline_time ASC',
+    );
+  }
+
+  Future<List<Map<String, dynamic>>> getSubjectsByUserId(int userId) async {
+    final db = await database;
+    return await db.query(
+      'subjects',
+      where: 'user_id = ? AND is_deleted = 0',
+      whereArgs: [userId],
+      orderBy: 'semester ASC, name ASC',
+    );
+  }
+
+  Future<int> updateUserInfo(int userId, String phone, int semester) async {
+    final db = await database;
+    return await db.update(
+      'users',
+      {'phone': phone, 'semester': semester},
+      where: 'user_id = ?',
+      whereArgs: [userId],
+    );
+  }
+
+  /// Update semester seluruh user jika semester_end telah lewat (misalnya berdasarkan hari ini)
+  Future<void> autoUpdateSemester() async {
+    final db = await database;
+    final today = DateTime.now();
+
+    final users = await db.query('users', where: 'is_deleted = 0');
+
+    for (final user in users) {
+      final userId = user['user_id'] as int;
+      int? currentSemester = (user['semester'] ?? 1) as int?;
+      String? semesterEndStr = user['semester_end'] as String?;
+
+      if (semesterEndStr == null) continue;
+
+      DateTime semesterEnd;
+      try {
+        semesterEnd = DateTime.parse(semesterEndStr);
+      } catch (e) {
+        continue; // skip kalau parsing gagal
+      }
+
+      if (today.isBefore(semesterEnd)) {
+        continue; // belum waktunya naik semester
+      }
+
+      // Hitung berapa semester telah berlalu (per 6 bulan = 180 hari)
+      int semesterPassed =
+          ((today.difference(semesterEnd).inDays) / 180).floor() + 1;
+
+      final newSemester = currentSemester! + semesterPassed;
+      final newSemesterEnd = semesterEnd.add(
+        Duration(days: 180 * semesterPassed),
+      );
+
+      await db.update(
+        'users',
+        {
+          'semester': newSemester,
+          'semester_end': newSemesterEnd.toIso8601String().substring(0, 10),
+        },
+        where: 'user_id = ?',
+        whereArgs: [userId],
+      );
+    }
+  }
+
+  Future<int> updateUserSemester(int userId) async {
+    final db = await database;
+    return await db.update(
+      'users',
+      {'semester': 1},
+      where: 'user_id = ?',
+      whereArgs: [userId],
+    );
   }
 }

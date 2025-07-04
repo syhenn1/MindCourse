@@ -24,4 +24,6 @@ class SessionManager {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_keyUserId);
   }
+
+  static Future getUserSemester() async {}
 }

@@ -85,9 +85,16 @@ class _LoginRegisterPageState extends State<LoginRegisterPage> {
       return;
     }
 
-    final existingUser = await dbHelper.getUserByEmail(email);
-    if (existingUser != null) {
+    final existingEmail = await dbHelper.getUserByEmail(email);
+    final existingName = await dbHelper.getUserByName(name);
+
+    if (existingEmail != null) {
       _showMessage('Email sudah terdaftar');
+      return;
+    }
+
+    if (existingName != null){
+      _showMessage('Nama sudah terdaftar');
       return;
     }
 
@@ -98,7 +105,7 @@ class _LoginRegisterPageState extends State<LoginRegisterPage> {
       password: password,
       dateAdded: DateTime.now().toIso8601String(),
       isDeleted: 0,
-      semester: 1,
+      semester: 0,
     );
 
     int userId = await dbHelper.insertUser(newUser);

@@ -1,9 +1,13 @@
+import 'package:MindCourse/main.dart';
 import 'package:flutter/material.dart';
-import 'package:mindcourse/helpers/dbhelper.dart';
-import 'package:mindcourse/helpers/session_manager.dart';
-import 'package:mindcourse/models/subject.dart';
+import 'package:uuid/uuid.dart';
+import '/helpers/dbhelper.dart';
+import '/models/subject.dart';
 
-Future<List<Widget>> buildSubjectCards(int userId) async {
+Future<List<Widget>> buildSubjectCards(
+  BuildContext context,
+  String userId,
+) async {
   final DbHelper dbHelper = DbHelper();
   final subjects = await dbHelper.getSubjectsByUserId(userId);
 
@@ -12,36 +16,55 @@ Future<List<Widget>> buildSubjectCards(int userId) async {
   }
 
   return subjects.map((subject) {
-    return Card(
-      margin: EdgeInsets.symmetric(vertical: 8),
-      child: ListTile(
-        leading: Icon(Icons.school),
-        title: Text(subject['name'] ?? 'Tanpa Nama'),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (subject['description'] != null &&
-                subject['description'].toString().isNotEmpty)
-              Text(subject['description']),
-            Text('Semester: ${subject['semester']}'),
-            Text('Ditambahkan: ${subject['date_added']}'),
-          ],
+    return InkWell(
+      onTap: () => Navigator.pushNamed(
+        context,
+        '/subject',
+        arguments: {
+          'subject_id': subject['subject_id'],
+          'user_id': subject['user_id'],
+          'description': subject['description'],
+          'date_added': subject['date_added'],
+          'name': subject['name'],
+          'semester': subject['semester'],
+        },
+      ),
+      child: Card(
+        margin: EdgeInsets.symmetric(vertical: 8),
+        child: ListTile(
+          leading: Icon(Icons.school),
+          title: Text(subject['name'] ?? 'Tanpa Nama'),
+          subtitle: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (subject['description'] != null &&
+                  subject['description'].toString().isNotEmpty)
+                Text(subject['description']),
+              Text('Semester: ${subject['semester']}'),
+              Text('id: ${subject['subject_id']}'),
+              Text('Ditambahkan: ${subject['date_added']}'),
+              ElevatedButton(
+                onPressed: () async {
+                  await dbHelper.softDeleteSubject(subject['subject_id']);
+                },
+                child: Text("Delete"),
+              ),
+            ],
+          ),
+          isThreeLine: true,
         ),
-        isThreeLine: true,
       ),
     );
   }).toList();
 }
 
-Future<void> showAddSubjectDialog(BuildContext context, int userId) async {
+Future<bool?> showAddSubjectDialog(BuildContext context, String userId) async {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController nameController = TextEditingController();
   final TextEditingController descriptionController = TextEditingController();
+  final userSemester = await dbHelper.getUserSemester(userId);
 
-  // Ambil semester dari session
-  final userSemester = await SessionManager.getUserSemester();
-
-  await showDialog(
+  return await showDialog<bool>(
     context: context,
     builder: (BuildContext ctx) {
       return AlertDialog(
@@ -64,44 +87,42 @@ Future<void> showAddSubjectDialog(BuildContext context, int userId) async {
                   decoration: InputDecoration(labelText: 'Deskripsi'),
                 ),
                 SizedBox(height: 10),
-                if (userSemester != null)
-                  Text(
-                    'Semester Anda: $userSemester',
-                    style: TextStyle(color: Colors.grey[700]),
-                  ),
+                Text(
+                  'Semester Anda: $userSemester',
+                  style: TextStyle(color: Colors.grey[700]),
+                ),
               ],
             ),
           ),
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
+            onPressed: () => Navigator.of(ctx).pop(false),
             child: Text('Batal'),
           ),
           ElevatedButton(
             onPressed: () async {
               if (_formKey.currentState!.validate()) {
+                var uuid = Uuid();
+                String newUserId = uuid.v4();
                 final name = nameController.text.trim();
                 final desc = descriptionController.text.trim();
                 final now = DateTime.now().toIso8601String().substring(0, 10);
 
-                // 1. Create a proper Subject instance using its constructor
                 final newSubject = Subject(
+                  newUserId,
                   name,
                   desc,
                   now,
-                  0, // is_deleted
+                  0,
                   userId,
-                  userSemester ?? 0, // semester
+                  userSemester,
                 );
 
                 final DbHelper dbHelper = DbHelper();
-
-                // 2. Pass the Subject object to the insert method
-                // (This assumes your dbHelper.insertSubject method expects a Subject object)
                 await dbHelper.insertSubject(newSubject);
 
-                Navigator.of(ctx).pop();
+                Navigator.of(ctx).pop(true);
               }
             },
             child: Text('Simpan'),

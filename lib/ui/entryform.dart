@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:mindcourse/models/subject.dart';
-// import 'package:mindcourse/helpers/dbhelper.dart';
+import '/models/subject.dart';
 
 class EntryForm extends StatefulWidget {
   final Subject subject;

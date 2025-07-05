@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:mindcourse/helpers/session_manager.dart';
-import 'package:mindcourse/models/user.dart';
-import 'package:mindcourse/helpers/dbhelper.dart';
-import 'package:mindcourse/ui/login.dart';
-import 'package:mindcourse/components/courses.dart';
-import 'package:mindcourse/components/subjects.dart';
+import '/helpers/session_manager.dart';
+import '/models/user.dart';
+import '/helpers/dbhelper.dart';
+import '/ui/login.dart';
+import '/components/courses.dart';
+import '/components/subjects.dart';
 import 'dart:async';
 
 /// Halaman utama (Home) yang ditampilkan setelah pengguna berhasil login.
@@ -69,7 +69,7 @@ class _HomeState extends State<Home> {
 
   Future<void> showIncompleteInfoDialog(
     BuildContext context,
-    int userId,
+    String userId,
   ) async {
     final _formKey = GlobalKey<FormState>();
     final TextEditingController phoneController = TextEditingController();
@@ -150,10 +150,16 @@ class _HomeState extends State<Home> {
                 if (_formKey.currentState!.validate()) {
                   final phone = phoneController.text.trim();
                   final semester = int.parse(semesterController.text.trim());
+                  final semesterEnd = semesterEndController.text.trim();
 
-                  await dbHelper.updateUserInfo(userId, phone, semester);
+                  await dbHelper.updateUserInfo(
+                    userId,
+                    phone,
+                    semester,
+                    semesterEnd,
+                  );
 
-                  Navigator.of(ctx).pop();
+                  Navigator.of(ctx).pop(true);
 
                   // Refresh home
                   _loadUserData();
@@ -185,12 +191,14 @@ class _HomeState extends State<Home> {
     }
 
     final isIncomplete =
-        (_currentUser!.phone.isEmpty) || (_currentUser!.semester == 0);
+        (_currentUser!.phone.isEmpty) ||
+        (_currentUser!.semester == 0) ||
+        (_currentUser!.semesterEnd.isEmpty);
 
     if (isIncomplete) {
       // Show prompt and open popup after build
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        showIncompleteInfoDialog(context, _currentUser!.userId as int);
+        showIncompleteInfoDialog(context, _currentUser!.userId as String);
       });
 
       return Center(
@@ -224,7 +232,7 @@ class _HomeState extends State<Home> {
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             FutureBuilder<List<Widget>>(
-              future: buildCourseCards(_currentUser!.userId as int),
+              future: buildCourseCards(_currentUser!.userId as String),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return Padding(
@@ -244,7 +252,7 @@ class _HomeState extends State<Home> {
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             FutureBuilder<List<Widget>>(
-              future: buildSubjectCards(_currentUser!.userId as int),
+              future: buildSubjectCards(context, _currentUser!.userId as String),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return Padding(
@@ -260,8 +268,21 @@ class _HomeState extends State<Home> {
             ),
             SizedBox(height: 16),
             FloatingActionButton(
-              onPressed: () =>
-                  showAddSubjectDialog(context, _currentUser!.userId as int),
+              onPressed: () async {
+                // Tunggu hasil dari dialog
+                final result = await showAddSubjectDialog(
+                  context,
+                  _currentUser!.userId as String,
+                );
+
+                // Jika dialog mengembalikan true (berhasil menambah), panggil setState
+                if (result == true && mounted) {
+                  setState(() {
+                    // Cukup panggil setState kosong. Ini akan memicu `build` ulang,
+                    // dan FutureBuilder akan mengambil data subject yang baru.
+                  });
+                }
+              },
               tooltip: 'Tambah Mata Kuliah',
               child: Icon(Icons.add),
             ),

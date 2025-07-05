@@ -1,7 +1,7 @@
 /// Model data untuk entitas Pengguna (User).
 /// Berisi properti dan metode untuk mengelola data pengguna.
 class User {
-  int? _userId;
+  String? _userId;
   late String _name;
   late String _phone;
   late String _email;
@@ -9,9 +9,11 @@ class User {
   late String _dateAdded;
   late int _isDeleted;
   late int _semester;
+  late String _semesterEnd;
 
   // Konstruktor utama (jarang digunakan secara langsung).
   User(
+    this._userId,
     this._name,
     this._phone,
     this._email,
@@ -19,10 +21,12 @@ class User {
     this._dateAdded,
     this._isDeleted,
     this._semester,
+    this._semesterEnd,
   );
 
   // Named constructor untuk membuat instance User baru dengan lebih rapi.
   User.create({
+    required String userId,
     required String name,
     required String phone,
     required String email,
@@ -30,7 +34,9 @@ class User {
     required String dateAdded,
     required int isDeleted,
     required int semester,
+    required String semesterEnd,
   }) {
+    _userId = userId;
     _name = name;
     _phone = phone;
     _email = email;
@@ -38,6 +44,7 @@ class User {
     _dateAdded = dateAdded;
     _isDeleted = isDeleted;
     _semester = semester;
+    _semesterEnd = semesterEnd;
   }
 
   // Konstruktor untuk membuat instance User dari sebuah Map (misalnya, dari database).
@@ -50,10 +57,11 @@ class User {
     _dateAdded = map['date_added'];
     _isDeleted = map['is_deleted'];
     _semester = map['semester'];
+    _semesterEnd = map['semester_end'];
   }
 
   // Getter untuk mengakses properti privat.
-  int? get userId => _userId;
+  String? get userId => _userId;
   String get name => _name;
   String get phone => _phone;
   String get email => _email;
@@ -61,6 +69,7 @@ class User {
   String get dateAdded => _dateAdded;
   int get isDeleted => _isDeleted;
   int get semester => _semester;
+  String get semesterEnd => _semesterEnd;
 
   // Setter untuk mengubah nilai properti privat.
   set name(String value) => _name = value;
@@ -70,10 +79,12 @@ class User {
   set dateAdded(String value) => _dateAdded = value;
   set isDeleted(int value) => _isDeleted = value;
   set semester(int value) => _semester = value;
+  set semesterEnd(String value) => _semesterEnd = value;
 
   // Metode untuk mengonversi instance User menjadi Map (untuk disimpan ke database).
   Map<String, dynamic> toMap() {
     final map = <String, dynamic>{
+      'user_id': _userId,
       'name': _name,
       'phone': _phone,
       'email': _email,
@@ -81,6 +92,7 @@ class User {
       'date_added': _dateAdded,
       'is_deleted': _isDeleted,
       'semester': _semester,
+      'semester_end': _semesterEnd,
     };
     if (_userId != null) {
       map['user_id'] = _userId;
@@ -89,8 +101,7 @@ class User {
   }
 
   @override
-
   String toString() {
-    return 'User{userId: $_userId, name: $_name, phone: $_phone, email: $_email, semester: $_semester}';
+    return 'User{userId: $_userId, name: $_name, phone: $_phone, email: $_email, semester: $_semester}, semesterEnd: $_semesterEnd}';
   }
 }

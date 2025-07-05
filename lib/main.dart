@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:mindcourse/helpers/dbhelper.dart';
-import 'package:mindcourse/ui/login.dart';
-import 'package:mindcourse/ui/home.dart';
-import 'package:mindcourse/helpers/session_manager.dart';
+import 'helpers/dbhelper.dart';
+import 'ui/login.dart';
+import 'ui/home.dart';
+import 'helpers/session_manager.dart';
+import 'ui/subjectPage.dart';
 
 final DbHelper dbHelper = DbHelper();
 
@@ -16,6 +17,7 @@ void main() async {
 /// dan menunjuk ke AuthGate sebagai halaman pertama.
 class MyApp extends StatelessWidget {
   @override
+
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Demo Database',
@@ -27,14 +29,13 @@ class MyApp extends StatelessWidget {
       routes: {
         '/login': (context) => LoginRegisterPage(),
         '/home': (context) => Home(),
+        '/subject': (context) => SubjectPage(),
       },
       debugShowCheckedModeBanner: false,
     );
   }
 }
 
-/// AuthGate adalah "halaman gerbang" yang berfungsi sebagai layar pembuka.
-/// Tugasnya adalah memeriksa status sesi dan mengarahkan pengguna.
 class AuthGate extends StatefulWidget {
   @override
   _AuthGateState createState() => _AuthGateState();

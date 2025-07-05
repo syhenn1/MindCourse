@@ -1,75 +1,62 @@
 class Course {
-  int? _courseId;
-  late String _name;
-  late String _description;
-  late String _deadline;
-  late String _status;
-  late String _dateAdded;
-  late int _isDeleted;
-  late int _userId;
-  late int _subjectId;
+  String? courseId;
+  late String name;
+  late String description;
+  late String deadlineDay; // format: yyyy-MM-dd
+  late String deadlineTime; // format: HH:mm:ss
+  late String status;
+  late String dateAdded;
+  late int isDeleted;
+  late int isDone;
+  late String userId;
+  late String subjectId;
 
   Course(
-    this._name,
-    this._description,
-    this._deadline,
-    this._status,
-    this._dateAdded,
-    this._isDeleted,
-    this._userId,
-    this._subjectId,
+    this.courseId,
+    this.name,
+    this.description,
+    this.deadlineDay,
+    this.deadlineTime,
+    this.status,
+    this.dateAdded,
+    this.isDeleted,
+    this.isDone,
+    this.userId,
+    this.subjectId,
   );
 
   Course.fromMap(Map<String, dynamic> map) {
-    _courseId = map['course_id'];
-    _name = map['name'];
-    _description = map['description'];
-    _deadline = map['deadline'];
-    _status = map['status'];
-    _dateAdded = map['date_added'];
-    _isDeleted = map['is_deleted'];
-    _userId = map['user_id'];
-    _subjectId = map['subject_id'];
+    courseId = map['course_id'];
+    name = map['name'];
+    description = map['description'];
+    deadlineDay = map['deadline_day'];
+    deadlineTime = map['deadline_time'];
+    status = map['status'];
+    dateAdded = map['date_added'];
+    isDeleted = map['is_deleted'];
+    isDone = map['is_done'];
+    userId = map['user_id'];
+    subjectId = map['subject_id'];
   }
 
-  int? get courseId => _courseId;
-  String get name => _name;
-  String get description => _description;
-  String get deadline => _deadline;
-  String get status => _status;
-  String get dateAdded => _dateAdded;
-  int get isDeleted => _isDeleted;
-  int get userId => _userId;
-  int get subjectId => _subjectId;
-
-  set name(String value) => _name = value;
-  set description(String value) => _description = value;
-  set deadline(String value) => _deadline = value;
-  set status(String value) => _status = value;
-  set dateAdded(String value) => _dateAdded = value;
-  set isDeleted(int value) => _isDeleted = value;
-  set userId(int value) => _userId = value;
-  set subjectId(int value) => _subjectId = value;
-
   Map<String, dynamic> toMap() {
-    final map = <String, dynamic>{
-      'name': _name,
-      'description': _description,
-      'deadline': _deadline,
-      'status': _status,
-      'date_added': _dateAdded,
-      'is_deleted': _isDeleted,
-      'user_id': _userId,
-      'subject_id': _subjectId,
+    return {
+      'course_id': courseId,
+      'name': name,
+      'description': description,
+      'deadline_day': deadlineDay,
+      'deadline_time': deadlineTime,
+      'status': status,
+      'date_added': dateAdded,
+      'is_deleted': isDeleted,
+      'is_done': isDone,
+      'user_id': userId,
+      'subject_id': subjectId,
     };
-    if (_courseId != null) {
-      map['course_id'] = _courseId;
-    }
-    return map;
   }
 
   @override
   String toString() {
-    return 'Course{courseId: $_courseId, name: $_name, subjectId: $_subjectId, userId: $_userId, status: $_status}';
+    return 'Course{courseId: $courseId, name: $name, deadline: $deadlineDay $deadlineTime, status: $status}';
   }
 }

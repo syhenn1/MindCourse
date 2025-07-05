@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:mindcourse/helpers/dbhelper.dart';
-import 'package:mindcourse/helpers/session_manager.dart';
-import 'package:mindcourse/models/user.dart';
-import 'package:mindcourse/ui/home.dart';
+import 'package:uuid/uuid.dart';
+import '/helpers/dbhelper.dart';
+import '/helpers/session_manager.dart';
+import '/models/user.dart';
+import '/ui/home.dart';
 
 /// Halaman yang menangani UI dan logika untuk Login dan Registrasi.
 /// Menggunakan PageView untuk beralih antara dua form.
@@ -38,13 +39,19 @@ class _LoginRegisterPageState extends State<LoginRegisterPage> {
   }
 
   void _goToRegister() {
-    _pageController.animateToPage(1,
-        duration: Duration(milliseconds: 300), curve: Curves.easeInOut);
+    _pageController.animateToPage(
+      1,
+      duration: Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+    );
   }
 
   void _goToLogin() {
-    _pageController.animateToPage(0,
-        duration: Duration(milliseconds: 300), curve: Curves.easeInOut);
+    _pageController.animateToPage(
+      0,
+      duration: Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+    );
   }
 
   Future<void> _handleLogin() async {
@@ -93,12 +100,15 @@ class _LoginRegisterPageState extends State<LoginRegisterPage> {
       return;
     }
 
-    if (existingName != null){
+    if (existingName != null) {
       _showMessage('Nama sudah terdaftar');
       return;
     }
 
+    var uuid = Uuid();
+    String newUserId = uuid.v4();
     User newUser = User.create(
+      userId: newUserId,
       name: name,
       phone: '', // Default ke string kosong
       email: email,
@@ -106,9 +116,10 @@ class _LoginRegisterPageState extends State<LoginRegisterPage> {
       dateAdded: DateTime.now().toIso8601String(),
       isDeleted: 0,
       semester: 0,
+      semesterEnd: '',
     );
 
-    int userId = await dbHelper.insertUser(newUser);
+    String userId = (await dbHelper.insertUser(newUser)) as String;
     await SessionManager.saveUserId(userId);
 
     if (!mounted) return;
@@ -120,9 +131,9 @@ class _LoginRegisterPageState extends State<LoginRegisterPage> {
 
   void _showMessage(String message) {
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
     }
   }
 
@@ -141,10 +152,7 @@ class _LoginRegisterPageState extends State<LoginRegisterPage> {
             _currentPage = page;
           });
         },
-        children: [
-          _buildLoginForm(),
-          _buildRegisterForm(),
-        ],
+        children: [_buildLoginForm(), _buildRegisterForm()],
       ),
     );
   }
@@ -167,10 +175,7 @@ class _LoginRegisterPageState extends State<LoginRegisterPage> {
             obscureText: true,
           ),
           SizedBox(height: 24),
-          ElevatedButton(
-            onPressed: _handleLogin,
-            child: Text('Login'),
-          ),
+          ElevatedButton(onPressed: _handleLogin, child: Text('Login')),
           TextButton(
             onPressed: _goToRegister,
             child: Text("Belum punya akun? Daftar"),
@@ -204,10 +209,7 @@ class _LoginRegisterPageState extends State<LoginRegisterPage> {
             obscureText: true,
           ),
           SizedBox(height: 24),
-          ElevatedButton(
-            onPressed: _handleRegister,
-            child: Text('Register'),
-          ),
+          ElevatedButton(onPressed: _handleRegister, child: Text('Register')),
           TextButton(
             onPressed: _goToLogin,
             child: Text("Sudah punya akun? Login"),

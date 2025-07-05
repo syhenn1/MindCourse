@@ -2,13 +2,15 @@ import 'package:sqflite/sqflite.dart';
 import 'dart:io';
 import 'dart:async';
 import 'package:path_provider/path_provider.dart';
-import 'package:mindcourse/models/user.dart';
-import 'package:mindcourse/models/subject.dart';
-import 'package:mindcourse/models/course.dart';
+import '/models/user.dart';
+import '/models/subject.dart';
+import '/models/course.dart';
+import 'package:uuid/uuid.dart';
 
 class DbHelper {
   static final DbHelper _dbHelper = DbHelper._createObject();
   static Database? _database;
+  var uuid = Uuid();
 
   DbHelper._createObject();
 
@@ -27,30 +29,29 @@ class DbHelper {
   void _createDb(Database db, int version) async {
     await db.execute('''
       CREATE TABLE users (
-        user_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id TEXT PRIMARY KEY,
         name TEXT,
         phone TEXT,
         email TEXT,
         password TEXT,
-        date_added DATE,
+        date_added TEXT,
         is_deleted INTEGER,
         semester INTEGER,
-        semester_end DATE,
+        semester_end TEXT,
         notification_sound TEXT,
         UNIQUE(email),
-        UNIQUE(phone),
         UNIQUE(name)
       )
     ''');
 
     await db.execute('''
       CREATE TABLE subjects (
-        subject_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        subject_id TEXT PRIMARY KEY,
         name TEXT,
         description TEXT,
-        date_added DATE,
+        date_added TEXT,
         is_deleted INTEGER,
-        user_id INTEGER,
+        user_id TEXT,
         semester INTEGER,
         FOREIGN KEY (user_id) REFERENCES users(user_id)
       )
@@ -58,17 +59,17 @@ class DbHelper {
 
     await db.execute('''
       CREATE TABLE courses (
-        course_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        course_id TEXT PRIMARY KEY,
         name TEXT,
         description TEXT,
-        deadline_day DATE,
+        deadline_day TEXT,
         deadline_time TEXT,
         status TEXT,
-        date_added DATE,
+        date_added TEXT,
         is_deleted INTEGER,
         is_done INTEGER,
-        user_id INTEGER,
-        subject_id INTEGER,
+        user_id TEXT,
+        subject_id TEXT,
         FOREIGN KEY (user_id) REFERENCES users(user_id),
         FOREIGN KEY (subject_id) REFERENCES subjects(subject_id)
       )
@@ -82,14 +83,19 @@ class DbHelper {
 
   // ========== CRUD USERS ==========
 
-  Future<int> createUser(User user, {required String name}) async {
-    Database db = await this.database;
-    return await db.insert('users', user.toMap());
-  }
-
-  Future<int> insertUser(User user) async {
+  Future<String?> insertUser(User user) async {
     final db = await database;
-    return await db.insert('users', user.toMap());
+    try {
+      await db.insert(
+        'users',
+        user.toMap(), // asumsi user.toMap() berisi field user_id dll.
+        conflictAlgorithm: ConflictAlgorithm.abort,
+      );
+      return user.userId; // ini penting!
+    } catch (e) {
+      print("Insert gagal: $e");
+      rethrow; // agar error tetap dilempar kalau mau ditangani di atas
+    }
   }
 
   Future<List<Map<String, dynamic>>> getUsersMapList() async {
@@ -209,7 +215,7 @@ class DbHelper {
     return null;
   }
 
-  Future<User?> getUserById(int id) async {
+  Future<User?> getUserById(String id) async {
     final db = await database;
     final List<Map<String, dynamic>> maps = await db.query(
       'users',
@@ -225,7 +231,7 @@ class DbHelper {
     return null;
   }
 
-  Future<List<Map<String, dynamic>>> getCoursesByUserId(int userId) async {
+  Future<List<Map<String, dynamic>>> getCoursesByUserId(String userId) async {
     final db = await database;
     return await db.query(
       'courses',
@@ -235,7 +241,7 @@ class DbHelper {
     );
   }
 
-  Future<List<Map<String, dynamic>>> getSubjectsByUserId(int userId) async {
+  Future<List<Map<String, dynamic>>> getSubjectsByUserId(String userId) async {
     final db = await database;
     return await db.query(
       'subjects',
@@ -245,11 +251,16 @@ class DbHelper {
     );
   }
 
-  Future<int> updateUserInfo(int userId, String phone, int semester) async {
+  Future<int> updateUserInfo(
+    String userId,
+    String phone,
+    int semester,
+    String semesterEnd,
+  ) async {
     final db = await database;
     return await db.update(
       'users',
-      {'phone': phone, 'semester': semester},
+      {'phone': phone, 'semester': semester, 'semester_end': semesterEnd},
       where: 'user_id = ?',
       whereArgs: [userId],
     );
@@ -263,7 +274,7 @@ class DbHelper {
     final users = await db.query('users', where: 'is_deleted = 0');
 
     for (final user in users) {
-      final userId = user['user_id'] as int;
+      final userId = user['user_id'] as String;
       int? currentSemester = (user['semester'] ?? 1) as int?;
       String? semesterEndStr = user['semester_end'] as String?;
 
@@ -301,13 +312,48 @@ class DbHelper {
     }
   }
 
-  Future<int> updateUserSemester(int userId) async {
+  Future<int> updateUserSemester(String userId) async {
     final db = await database;
     return await db.update(
       'users',
       {'semester': 1},
       where: 'user_id = ?',
       whereArgs: [userId],
+    );
+  }
+
+  Future<int> getUserSemester(String userId) async {
+    final db = await database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      'users',
+      where: 'user_id = ?',
+      whereArgs: [userId],
+    );
+    if (maps.isNotEmpty) {
+      return maps.first['semester'] as int;
+    }
+    return 1;
+  }
+
+  Future<List<Map<String, dynamic>>> getCoursesBySubjectId(
+    String subjectId,
+  ) async {
+    final db = await database;
+    return await db.query(
+      'courses',
+      where: 'subject_id = ? AND is_deleted = 0',
+      whereArgs: [subjectId],
+      orderBy: 'deadline_day ASC, deadline_time ASC',
+    );
+  }
+
+  Future<int> softDeleteSubject(int subjectId) async {
+    final db = await database;
+    return await db.update(
+      'subjects',
+      {'is_deleted': 1},
+      where: 'subject_id = ?',
+      whereArgs: [subjectId],
     );
   }
 }

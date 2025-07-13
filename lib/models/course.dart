@@ -8,6 +8,7 @@ class Course {
   late String dateAdded;
   late int isDeleted;
   late int isDone;
+  late String doneDate;
   late String userId;
   late String subjectId;
 
@@ -21,6 +22,7 @@ class Course {
     this.dateAdded,
     this.isDeleted,
     this.isDone,
+    this.doneDate,
     this.userId,
     this.subjectId,
   );
@@ -35,6 +37,7 @@ class Course {
     dateAdded = map['date_added'];
     isDeleted = map['is_deleted'];
     isDone = map['is_done'];
+    doneDate = map['done_date'];
     userId = map['user_id'];
     subjectId = map['subject_id'];
   }
@@ -50,6 +53,7 @@ class Course {
       'date_added': dateAdded,
       'is_deleted': isDeleted,
       'is_done': isDone,
+      'done_date': doneDate,
       'user_id': userId,
       'subject_id': subjectId,
     };
@@ -57,6 +61,6 @@ class Course {
 
   @override
   String toString() {
-    return 'Course{courseId: $courseId, name: $name, deadline: $deadlineDay $deadlineTime, status: $status}';
+    return 'Course{courseId: $courseId, name: $name, deadline: $deadlineDay $deadlineTime, status: $status, dateAdded: $dateAdded, isDeleted: $isDeleted, isDone: $isDone, doneDate: $doneDate, userId: $userId, subjectId: $subjectId}';
   }
 }

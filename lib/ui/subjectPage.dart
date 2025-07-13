@@ -56,7 +56,6 @@ class _SubjectPageState extends State<SubjectPage> {
             ),
             SizedBox(height: 20),
             Expanded(
-              // ✅ Tambahkan ini untuk mencegah unbounded height
               child: FutureBuilder<List<Map<String, dynamic>>>(
                 future: dbHelper.getCoursesBySubjectId(subjectId),
                 builder: (context, snapshot) {
@@ -79,13 +78,19 @@ class _SubjectPageState extends State<SubjectPage> {
                     itemCount: courses.length,
                     itemBuilder: (context, index) {
                       final course = courses[index];
-                      return Card(
-                        margin: EdgeInsets.symmetric(vertical: 4),
-                        child: ListTile(
-                          leading: Icon(Icons.class_outlined),
-                          title: Text(course['name'] ?? 'Tanpa Nama Course'),
-                          subtitle: Text(
-                            course['description'] ?? 'Tanpa Deskripsi',
+                      return InkWell(
+                        onTap: () => showCourseDialog(
+                          context,
+                          course['course_id'],
+                        ),
+                        child: Card(
+                          margin: EdgeInsets.symmetric(vertical: 4),
+                          child: ListTile(
+                            leading: Icon(Icons.class_outlined),
+                            title: Text(course['name'] ?? 'Tanpa Nama Course'),
+                            subtitle: Text(
+                              course['description'] ?? 'Tanpa Deskripsi',
+                            ),
                           ),
                         ),
                       );

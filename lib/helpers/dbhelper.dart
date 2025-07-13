@@ -53,6 +53,8 @@ class DbHelper {
         is_deleted INTEGER,
         user_id TEXT,
         semester INTEGER,
+        is_done INTEGER,
+        done_date TEXT,
         FOREIGN KEY (user_id) REFERENCES users(user_id)
       )
     ''');
@@ -68,6 +70,7 @@ class DbHelper {
         date_added TEXT,
         is_deleted INTEGER,
         is_done INTEGER,
+        done_date TEXT,
         user_id TEXT,
         subject_id TEXT,
         FOREIGN KEY (user_id) REFERENCES users(user_id),
@@ -179,7 +182,7 @@ class DbHelper {
     );
   }
 
-  Future<int> deleteCourse(int id) async {
+  Future<int> deleteCourse(String id) async {
     final db = await database;
     return await db.delete('courses', where: 'course_id = ?', whereArgs: [id]);
   }
@@ -347,13 +350,47 @@ class DbHelper {
     );
   }
 
-  Future<int> softDeleteSubject(int subjectId) async {
+  Future<int> softDeleteSubject(String subjectId) async {
     final db = await database;
     return await db.update(
       'subjects',
       {'is_deleted': 1},
       where: 'subject_id = ?',
       whereArgs: [subjectId],
+    );
+  }
+
+  Future<int> markCourseAsDone(String courseId) async {
+    final db = await database;
+    return await db.update(
+      'courses',
+      {
+        'status': 'Selesai',
+        'is_done': 1,
+        'done_date': DateTime.now().toIso8601String(),
+      },
+      where: 'course_id = ?',
+      whereArgs: [courseId],
+    );
+  }
+
+  Future<Map<String, dynamic>?> getCourseById(String courseId) async {
+    final db = await database;
+    final result = await db.query(
+      'courses',
+      where: 'course_id = ?',
+      whereArgs: [courseId],
+    );
+    return result.isNotEmpty ? result.first : null;
+  }
+
+    Future<int> softDeleteCourse(String courseId) async {
+    final db = await database;
+    return await db.update(
+      'courses',
+      {'is_deleted': 1},
+      where: 'course_id = ?',
+      whereArgs: [courseId],
     );
   }
 }

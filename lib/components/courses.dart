@@ -176,16 +176,79 @@ Future<bool?> showAddCourseDialog(
                   now, // dateAdded
                   0, // isDeleted
                   0, // isDone
+                  '', // doneDate
                   userId,
                   subjectId,
                 );
 
+                print("Inserting with subjectId: $subjectId");
+
+                print("Fetching with subjectId: $subjectId");
                 await dbHelper.insertCourse(newCourse);
 
                 Navigator.of(ctx).pop(true);
               }
             },
             child: Text('Simpan'),
+          ),
+        ],
+      );
+    },
+  );
+}
+
+Future<bool?> showCourseDialog(
+  BuildContext context,
+  String courseId,
+) async {
+  final DbHelper dbHelper = DbHelper();
+  final course = await dbHelper.getCourseById(
+    courseId,
+  );
+
+  if (course == null) {
+    return null;
+  }
+
+  return await showDialog<bool>(
+    context: context,
+    builder: (BuildContext ctx) {
+      return AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        title: Text('Detail Course'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Nama: ${course['name']}'),
+            SizedBox(height: 4),
+            Text('Deskripsi: ${course['description'] ?? '-'}'),
+            SizedBox(height: 4),
+            Text(
+              'Deadline: ${course['deadline_day']} ${course['deadline_time']}',
+            ),
+            SizedBox(height: 4),
+            Text('Status: ${course['status']}'),
+          ],
+        ),
+        actions: [
+          TextButton.icon(
+            icon: Icon(Icons.check_circle, color: Colors.green),
+            label: Text('Selesai', style: TextStyle(color: Colors.green)),
+            onPressed: () async {
+              await dbHelper.markCourseAsDone(
+                courseId,
+              ); // Pastikan method ini ada
+              Navigator.of(ctx).pop(true);
+            },
+          ),
+          TextButton.icon(
+            icon: Icon(Icons.delete, color: Colors.red),
+            label: Text('Hapus', style: TextStyle(color: Colors.red)),
+            onPressed: () async {
+              await dbHelper.softDeleteCourse(courseId);
+              Navigator.of(ctx).pop(true);
+            },
           ),
         ],
       );

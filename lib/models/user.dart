@@ -1,5 +1,3 @@
-/// Model data untuk entitas Pengguna (User).
-/// Berisi properti dan metode untuk mengelola data pengguna.
 class User {
   String? _userId;
   late String _name;

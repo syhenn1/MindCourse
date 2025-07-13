@@ -9,6 +9,8 @@ class Subject {
   late int _isDeleted;
   late String _userId;
   late int _semester;
+  late int _isDone;
+  late String _doneDate;
 
   Subject(
     this._subjectId,
@@ -18,6 +20,8 @@ class Subject {
     this._isDeleted,
     this._userId,
     this._semester,
+    this._isDone,
+    this._doneDate,
   );
 
   static Future<Subject> createEmpty() async {
@@ -37,7 +41,9 @@ class Subject {
       DateTime.now().toIso8601String(),
       0,
       userId,
-      1, // default semester
+      1,
+      0,
+      '', // default semester
     );
   }
 
@@ -49,6 +55,8 @@ class Subject {
     _isDeleted = map['is_deleted'];
     _userId = map['user_id'];
     _semester = map['semester'];
+    _isDone = map['is_done'];
+    _doneDate = map['done_date'];
   }
 
   String? get subjectId => _subjectId;
@@ -58,6 +66,8 @@ class Subject {
   int get isDeleted => _isDeleted;
   String get userId => _userId;
   int get semester => _semester;
+  int get isDone => _isDone;
+  String get doneDate => _doneDate;
 
   set subjectId(String? value) => _subjectId = value;
   set name(String value) => _name = value;
@@ -66,6 +76,8 @@ class Subject {
   set isDeleted(int value) => _isDeleted = value;
   set userId(String value) => _userId = value;
   set semester(int value) => _semester = value;
+  set isDone(int value) => _isDone = value;
+  set doneDate(String value) => _doneDate = value;
 
   Map<String, dynamic> toMap() {
     final map = <String, dynamic>{
@@ -76,6 +88,8 @@ class Subject {
       'is_deleted': _isDeleted,
       'user_id': _userId,
       'semester': _semester,
+      'is_done': _isDone,
+      'done_date': _doneDate,
     };
     if (_subjectId != null) {
       map['subject_id'] = _subjectId;
@@ -85,7 +99,7 @@ class Subject {
 
   @override
   String toString() {
-    return 'Subject{subjectId: $_subjectId, name: $_name, userId: $_userId, semester: $_semester}';
+    return 'Subject{subjectId: $_subjectId, name: $_name, userId: $_userId, semester: $_semester, isDone: $_isDone, doneDate: $_doneDate}';
   }
 
   

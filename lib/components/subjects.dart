@@ -117,6 +117,8 @@ Future<bool?> showAddSubjectDialog(BuildContext context, String userId) async {
                   0,
                   userId,
                   userSemester,
+                  0,
+                  '',
                 );
 
                 final DbHelper dbHelper = DbHelper();

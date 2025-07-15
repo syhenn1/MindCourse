@@ -271,7 +271,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 
   Widget buildDot(int index) {
-    return Container(
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
       height: 10,
       width: _currentPage == index ? 25 : 10,
       margin: const EdgeInsets.only(right: 5),
@@ -279,7 +281,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         borderRadius: BorderRadius.circular(20),
         color: _currentPage == index
             ? const Color(0xFF013237)
-            : const Color(0xFFEAF9E7),
+            : const Color.fromARGB(103, 1, 50, 55),
       ),
     );
   }
@@ -331,7 +333,7 @@ class OnboardingSlide extends StatelessWidget {
                     .toList(),
               ),
             ),
-          const SizedBox(height: 25),
+          const SizedBox(height: 35),
           if (icon != null)
             Center(
               child: Image.asset(
@@ -340,12 +342,12 @@ class OnboardingSlide extends StatelessWidget {
                 fit: BoxFit.contain,
               ),
             ),
-          const SizedBox(height: 25),
+          const SizedBox(height: 35),
           if (description != null)
             Text(
               description!,
               style: const TextStyle(
-                fontSize: 20,
+                fontSize: 16,
                 color: const Color(0xFF013237),
                 height: 1.5,
                 fontWeight: FontWeight.w600,

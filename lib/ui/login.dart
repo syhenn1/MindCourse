@@ -1,8 +1,11 @@
+import 'dart:async';
+
+import 'package:MindCourse/components/alertCard.dart';
+import 'package:MindCourse/helpers/auth_service.dart';
+import 'package:MindCourse/ui/forms/login_form.dart';
+import 'package:MindCourse/ui/forms/register_form.dart';
 import 'package:flutter/material.dart';
-import 'package:uuid/uuid.dart';
 import '/helpers/dbhelper.dart';
-import '/helpers/session_manager.dart';
-import '/models/user.dart';
 import '/ui/home.dart';
 
 /// Halaman yang menangani UI dan logika untuk Login dan Registrasi.
@@ -14,6 +17,7 @@ class LoginRegisterPage extends StatefulWidget {
 
 class _LoginRegisterPageState extends State<LoginRegisterPage> {
   final PageController _pageController = PageController();
+  // ignore: unused_field
   int _currentPage = 0;
 
   final DbHelper dbHelper = DbHelper();
@@ -26,6 +30,12 @@ class _LoginRegisterPageState extends State<LoginRegisterPage> {
   final TextEditingController regNameController = TextEditingController();
   final TextEditingController regEmailController = TextEditingController();
   final TextEditingController regPasswordController = TextEditingController();
+  final TextEditingController regPasswordConfirmController =
+      TextEditingController();
+
+  Widget? _notificationCard; // Untuk menyimpan widget notifikasi
+  bool _isNotificationVisible = false; // Untuk mengontrol animasi
+  Timer? _notificationTimer; // Untuk menghilangkan notifikasi secara otomatis
 
   @override
   void dispose() {
@@ -35,187 +45,162 @@ class _LoginRegisterPageState extends State<LoginRegisterPage> {
     regNameController.dispose();
     regEmailController.dispose();
     regPasswordController.dispose();
+    _notificationTimer
+        ?.cancel(); // Pastikan timer dibatalkan saat widget dihapus
     super.dispose();
   }
 
   void _goToRegister() {
-    _pageController.animateToPage(
-      1,
-      duration: Duration(milliseconds: 300),
-      curve: Curves.easeInOut,
-    );
+    setState(() {
+      _currentPage = 1;
+    });
   }
 
   void _goToLogin() {
-    _pageController.animateToPage(
-      0,
-      duration: Duration(milliseconds: 300),
-      curve: Curves.easeInOut,
-    );
+    setState(() {
+      _currentPage = 0;
+    });
   }
 
+  final AuthService _authService = AuthService(); // Buat instance dari service
+
   Future<void> _handleLogin() async {
-    String email = emailController.text.trim();
-    String password = passwordController.text.trim();
+    try {
+      final user = await _authService.login(
+        emailController.text.trim(),
+        passwordController.text.trim(),
+      );
 
-    if (email.isEmpty || password.isEmpty) {
-      _showMessage('Email dan password tidak boleh kosong');
-      return;
-    }
-
-    final user = await dbHelper.getUserByEmail(email);
-
-    if (user == null || user.password != password) {
-      _showMessage('Email atau password salah');
-    } else {
-      if (user.userId == null) {
-        _showMessage('Login gagal: Data pengguna rusak (ID tidak ada).');
-        return;
+      if (user != null && mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => Home()),
+        );
       }
-
-      await SessionManager.saveUserId(user.userId!);
-      if (!mounted) return;
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => Home()),
+    } catch (e) {
+      // Tangkap error dari service dan tampilkan notifikasi
+      _showCustomNotification(
+        e.toString().replaceFirst('Exception: ', ''),
+        NotificationType.error,
       );
     }
   }
 
   Future<void> _handleRegister() async {
-    String name = regNameController.text.trim();
-    String email = regEmailController.text.trim();
-    String password = regPasswordController.text.trim();
+    try {
+      // Panggil service untuk melakukan registrasi dengan data dari controller
+      final String _ = await _authService.register(
+        name: regNameController.text.trim(),
+        email: regEmailController.text.trim(),
+        password: regPasswordController.text.trim(),
+        confirmPassword: regPasswordConfirmController.text.trim(),
+      );
 
-    if (name.isEmpty || email.isEmpty || password.isEmpty) {
-      _showMessage('Semua field harus diisi');
-      return;
-    }
+      // Jika registrasi di service berhasil (tidak ada exception),
+      // tampilkan notifikasi sukses.
+      _showCustomNotification(
+        'Registrasi berhasil! Silakan masuk dengan akun baru Anda.',
+        NotificationType.success,
+      );
 
-    final existingEmail = await dbHelper.getUserByEmail(email);
-    final existingName = await dbHelper.getUserByName(name);
-
-    if (existingEmail != null) {
-      _showMessage('Email sudah terdaftar');
-      return;
-    }
-
-    if (existingName != null) {
-      _showMessage('Nama sudah terdaftar');
-      return;
-    }
-
-    var uuid = Uuid();
-    String newUserId = uuid.v4();
-    User newUser = User.create(
-      userId: newUserId,
-      name: name,
-      phone: '', // Default ke string kosong
-      email: email,
-      password: password,
-      dateAdded: DateTime.now().toIso8601String(),
-      isDeleted: 0,
-      semester: 0,
-      semesterEnd: '',
-    );
-
-    String userId = (await dbHelper.insertUser(newUser)) as String;
-    await SessionManager.saveUserId(userId);
-
-    if (!mounted) return;
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (_) => Home()),
-    );
-  }
-
-  void _showMessage(String message) {
-    if (mounted) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(message)));
+      // Setelah registrasi sukses, bersihkan field dan arahkan pengguna
+      // ke halaman login untuk masuk.
+      regNameController.clear();
+      regEmailController.clear();
+      regPasswordController.clear();
+      regPasswordConfirmController.clear();
+      _goToLogin(); // Panggil fungsi untuk pindah ke halaman login
+    } catch (e) {
+      // Jika terjadi Exception di dalam AuthService, tangkap di sini.
+      // Tampilkan pesan error yang dikirim dari service.
+      _showCustomNotification(
+        // Menghapus "Exception: " dari pesan agar lebih rapi
+        e.toString().replaceFirst('Exception: ', ''),
+        NotificationType.error,
+      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(_currentPage == 0 ? 'Login' : 'Register'),
-        centerTitle: true,
-      ),
-      body: PageView(
-        controller: _pageController,
-        physics: NeverScrollableScrollPhysics(),
-        onPageChanged: (page) {
-          setState(() {
-            _currentPage = page;
-          });
-        },
-        children: [_buildLoginForm(), _buildRegisterForm()],
-      ),
-    );
-  }
-
-  Widget _buildLoginForm() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(20.0),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+      backgroundColor: _currentPage == 0
+          ? Colors.white
+          : const Color(0xFF013237),
+      body: Stack(
         children: [
-          TextField(
-            controller: emailController,
-            decoration: InputDecoration(labelText: 'Email'),
-            keyboardType: TextInputType.emailAddress,
+          // Login Page
+          AnimatedOpacity(
+            opacity: _currentPage == 0 ? 1.0 : 0.0,
+            duration: const Duration(milliseconds: 500),
+            curve: Curves.easeInOut,
+            child: IgnorePointer(
+              ignoring: _currentPage != 0,
+              child: LoginForm(
+                emailController: emailController,
+                passwordController: passwordController,
+                onLoginPressed: _handleLogin,
+                onGoToRegister: _goToRegister,
+              ),
+            ),
           ),
-          SizedBox(height: 12),
-          TextField(
-            controller: passwordController,
-            decoration: InputDecoration(labelText: 'Password'),
-            obscureText: true,
+
+          // Register Page
+          AnimatedOpacity(
+            opacity: _currentPage == 1 ? 1.0 : 0.0,
+            duration: const Duration(milliseconds: 500),
+            curve: Curves.easeInOut,
+            child: IgnorePointer(
+              ignoring: _currentPage != 1,
+              child: RegisterForm(
+                nameController: regNameController,
+                emailController: regEmailController,
+                passwordController: regPasswordController,
+                confirmPasswordController: regPasswordConfirmController,
+                onRegisterPressed: _handleRegister,
+                onGoToLogin: _goToLogin,
+              ),
+            ),
           ),
-          SizedBox(height: 24),
-          ElevatedButton(onPressed: _handleLogin, child: Text('Login')),
-          TextButton(
-            onPressed: _goToRegister,
-            child: Text("Belum punya akun? Daftar"),
+
+          AnimatedPositioned(
+            duration: const Duration(milliseconds: 500),
+            curve: Curves.easeOutCubic,
+            // Posisi di atas layar saat terlihat, dan di luar layar saat tersembunyi
+            top: _isNotificationVisible
+                ? MediaQuery.of(context).padding.top + 16
+                : -150,
+            left: 16,
+            right: 16,
+            child: _notificationCard ?? const SizedBox.shrink(),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildRegisterForm() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(20.0),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          TextField(
-            controller: regNameController,
-            decoration: InputDecoration(labelText: 'Nama'),
-            textCapitalization: TextCapitalization.words,
-          ),
-          SizedBox(height: 12),
-          TextField(
-            controller: regEmailController,
-            decoration: InputDecoration(labelText: 'Email'),
-            keyboardType: TextInputType.emailAddress,
-          ),
-          SizedBox(height: 12),
-          TextField(
-            controller: regPasswordController,
-            decoration: InputDecoration(labelText: 'Password'),
-            obscureText: true,
-          ),
-          SizedBox(height: 24),
-          ElevatedButton(onPressed: _handleRegister, child: Text('Register')),
-          TextButton(
-            onPressed: _goToLogin,
-            child: Text("Sudah punya akun? Login"),
-          ),
-        ],
-      ),
-    );
+  void _showCustomNotification(String message, NotificationType type) {
+    if (!mounted) return;
+
+    // Batalkan timer sebelumnya jika ada notifikasi yang masih berjalan
+    _notificationTimer?.cancel();
+
+    // Buat widget notifikasi menggunakan fungsi yang sudah Anda buat
+    final notificationCard = buildNotificationCard(message, type);
+
+    // Tampilkan notifikasi dengan animasi
+    setState(() {
+      _notificationCard = notificationCard;
+      _isNotificationVisible = true;
+    });
+
+    // Atur timer untuk menghilangkan notifikasi setelah 4 detik
+    _notificationTimer = Timer(const Duration(seconds: 4), () {
+      if (mounted) {
+        setState(() {
+          _isNotificationVisible = false;
+        });
+      }
+    });
   }
 }

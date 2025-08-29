@@ -4,7 +4,9 @@ import 'ui/login.dart';
 import 'ui/home.dart';
 import 'ui/splashscreen.dart';
 import 'ui/subjectPage.dart';
+import 'ui/subjectsPage.dart';
 import 'ui/onboarding.dart';
+import 'ui/coursesPage.dart';
 
 final DbHelper dbHelper = DbHelper();
 
@@ -13,12 +15,8 @@ void main() async {
   runApp(MyApp());
 }
 
-/// Widget utama aplikasi.
-/// Konfigurasinya sekarang lebih sederhana, hanya mendefinisikan rute
-/// dan menunjuk ke AuthGate sebagai halaman pertama.
 class MyApp extends StatelessWidget {
   @override
-
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Demo Database',
@@ -32,6 +30,8 @@ class MyApp extends StatelessWidget {
         '/home': (context) => Home(),
         '/subject': (context) => SubjectPage(),
         '/onboarding': (context) => OnboardingScreen(),
+        '/subjects': (context) => SubjectsPage(),
+        '/courses': (context) => CoursesPage(),
       },
       debugShowCheckedModeBanner: false,
     );

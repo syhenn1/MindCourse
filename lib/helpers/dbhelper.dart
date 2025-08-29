@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:sqflite/sqflite.dart';
 import 'dart:io';
 import 'dart:async';
@@ -384,7 +385,7 @@ class DbHelper {
     return result.isNotEmpty ? result.first : null;
   }
 
-    Future<int> softDeleteCourse(String courseId) async {
+  Future<int> softDeleteCourse(String courseId) async {
     final db = await database;
     return await db.update(
       'courses',
@@ -392,5 +393,58 @@ class DbHelper {
       where: 'course_id = ?',
       whereArgs: [courseId],
     );
+  }
+
+  Future<List<Map<String, dynamic>>> getUpcomingDeadlines() async {
+    final db = await database;
+    final now = DateTime.now();
+
+    // ambil semua course yang belum selesai dan belum dihapus
+    final List<Map<String, dynamic>> result = await db.query(
+      'courses',
+      where: 'is_done = ? AND is_deleted = ?',
+      whereArgs: [0, 0],
+    );
+
+    // filter deadline < 24 jam
+    List<Map<String, dynamic>> upcoming = [];
+    for (var row in result) {
+      try {
+        final deadlineDay = row['deadline_day'] as String;
+        final deadlineTime = row['deadline_time'] as String;
+        final deadline = DateTime.parse("$deadlineDay $deadlineTime");
+
+        final diff = deadline.difference(now);
+        if (diff.inHours > 0 && diff.inHours <= 24) {
+          upcoming.add(row);
+        }
+      } catch (e) {
+        debugPrint("Error parsing deadline: $e");
+      }
+    }
+
+    return upcoming;
+  }
+
+  Future<int> getJumlahBelumSelesai() async {
+    final db = await database;
+    final result = await db.rawQuery(
+      "SELECT COUNT(*) as jumlah FROM courses WHERE is_done = 0",
+    );
+    return Sqflite.firstIntValue(result) ?? 0;
+  }
+
+Future<int> getJumlahSelesai() async {
+  final db = await database;
+  final result = await db.rawQuery(
+    "SELECT COUNT(*) as jumlah FROM courses WHERE is_done = 1",
+  );
+  return Sqflite.firstIntValue(result) ?? 0;
+}
+
+  Future<int> getTotalTugas() async {
+    final db = await database;
+    final result = await db.rawQuery('SELECT COUNT(*) as total FROM courses');
+    return Sqflite.firstIntValue(result) ?? 0;
   }
 }

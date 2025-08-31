@@ -21,10 +21,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Demo Database',
       theme: ThemeData(primarySwatch: Colors.blue),
-      // AuthGate sekarang menjadi halaman utama.
-      // initialRoute tidak lagi digunakan di sini.
       home: SplashScreen(),
-      // Semua rute yang mungkin didefinisikan di sini agar selalu tersedia.
       routes: {
         '/login': (context) => LoginRegisterPage(),
         '/home': (context) => Home(),

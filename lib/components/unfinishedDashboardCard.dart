@@ -1,49 +1,20 @@
 import 'package:flutter/material.dart';
-import 'package:MindCourse/helpers/dbhelper.dart';
 
-class UnfinishedTaskCard extends StatefulWidget {
-  const UnfinishedTaskCard({super.key});
+class UnfinishedTaskCard extends StatelessWidget {
+  final int jumlahBelumSelesai;
 
-  @override
-  State<UnfinishedTaskCard> createState() => _UnfinishedTaskCardState();
-}
-
-class _UnfinishedTaskCardState extends State<UnfinishedTaskCard> {
-  int jumlahBelumSelesai = 0;
-  int jumlahSelesai = 0;
-  int totalTugas = 0;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadJumlahTugas();
-  }
-
-  Future<void> _loadJumlahTugas() async {
-    final belumSelesai = await DbHelper().getJumlahBelumSelesai();
-    final selesai = await DbHelper().getJumlahSelesai();
-    final total = belumSelesai + selesai;
-
-    setState(() {
-      jumlahBelumSelesai = belumSelesai;
-      jumlahSelesai = selesai;
-      totalTugas = total;
-    });
-  }
+  const UnfinishedTaskCard({super.key, required this.jumlahBelumSelesai});
 
   @override
   Widget build(BuildContext context) {
     String message;
-    Color messageColor = Colors.black;
+    Color messageColor;
 
-    if (totalTugas == 0) {
-      message = "Belum ada tugasnya nih!";
-      messageColor = const Color.fromARGB(255, 255, 255, 255);
-    } else if (jumlahBelumSelesai == 0) {
-      message = "Horee tugas sudah selesai semua";
+    if (jumlahBelumSelesai == 0) {
+      message = "Kerja bagus! Semua tugas sudah selesai.";
       messageColor = Colors.green;
     } else {
-      message = "Waduh! $jumlahBelumSelesai tugas belum selesai";
+      message = "Waduh! $jumlahBelumSelesai Tugas Belum Selesai";
       messageColor = Colors.red;
     }
 
@@ -56,9 +27,10 @@ class _UnfinishedTaskCardState extends State<UnfinishedTaskCard> {
         padding: const EdgeInsets.all(12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             const Text(
-              "Tugas yang Tersedia",
+              "Tugas Belum Selesai",
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w800,
@@ -66,15 +38,6 @@ class _UnfinishedTaskCardState extends State<UnfinishedTaskCard> {
                 color: Colors.white,
               ),
             ),
-            if (jumlahSelesai > 0)
-              Text(
-                "$jumlahSelesai tugas selesai",
-                style: const TextStyle(
-                  fontSize: 10,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
             const SizedBox(height: 8),
             Text(
               message,

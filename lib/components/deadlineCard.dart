@@ -1,21 +1,15 @@
 import 'dart:async';
-import 'package:MindCourse/helpers/dbhelper.dart';
 import 'package:flutter/material.dart';
 
 class UpcomingDeadlineCard extends StatefulWidget {
-  const UpcomingDeadlineCard({super.key});
+  final List<Map<String, dynamic>> deadlines;
+  const UpcomingDeadlineCard({super.key, required this.deadlines});
 
   @override
   State<UpcomingDeadlineCard> createState() => _UpcomingDeadlineCardState();
 }
 
 class _UpcomingDeadlineCardState extends State<UpcomingDeadlineCard> {
-  final DbHelper dbHelper = DbHelper();
-  List<Map<String, dynamic>> _deadlines = [];
-  bool _hasError = false;
-  bool _isLoading = true;
-
-  // Controller and Timer for Carousel
   late PageController _pageController;
   Timer? _timer;
   int _currentPage = 0;
@@ -24,62 +18,51 @@ class _UpcomingDeadlineCardState extends State<UpcomingDeadlineCard> {
   void initState() {
     super.initState();
     _pageController = PageController();
-    _loadDeadlines();
+    _setupCarousel();
+  }
+
+  @override
+  void didUpdateWidget(UpcomingDeadlineCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Jika data dari parent berubah, setup ulang carousel
+    if (widget.deadlines != oldWidget.deadlines) {
+      _setupCarousel();
+    }
+  }
+
+  void _setupCarousel() {
+    _timer?.cancel(); // Batalkan timer lama
+    if (widget.deadlines.length > 1) {
+      _startCarouselTimer();
+    }
   }
 
   @override
   void dispose() {
-    // Clean up the controller and timer to prevent memory leaks
     _pageController.dispose();
     _timer?.cancel();
     super.dispose();
   }
 
   void _startCarouselTimer() {
-    // Start a periodic timer to auto-scroll the PageView
-    _timer = Timer.periodic(const Duration(milliseconds: 3000), (Timer timer) {
-      if (_currentPage < _deadlines.length - 1) {
+    _timer = Timer.periodic(const Duration(seconds: 5), (Timer timer) {
+      if (!mounted) return;
+      if (_currentPage < widget.deadlines.length - 1) {
         _currentPage++;
       } else {
-        _currentPage = 0; // Loop back to the first page
+        _currentPage = 0;
       }
 
       if (_pageController.hasClients) {
         _pageController.animateToPage(
           _currentPage,
-          duration: const Duration(milliseconds: 3000),
+          duration: const Duration(milliseconds: 500),
           curve: Curves.easeIn,
         );
       }
     });
   }
 
-  Future<void> _loadDeadlines() async {
-    try {
-      final data = await dbHelper.getUpcomingDeadlines();
-      if (!mounted) return;
-
-      setState(() {
-        _deadlines = data;
-        _hasError = false;
-        _isLoading = false;
-      });
-
-      // Start the carousel only if there are 2 or more items
-      if (_deadlines.length > 1) {
-        _startCarouselTimer();
-      }
-    } catch (e) {
-      debugPrint("ERROR FETCH DEADLINES: $e");
-      if (!mounted) return;
-      setState(() {
-        _hasError = true;
-        _isLoading = false;
-      });
-    }
-  }
-
-  // Helper widget to build a single deadline card
   Widget _buildDeadlineCard(Map<String, dynamic> row) {
     final deadlineDay = row['deadline_day'];
     final deadlineTime = row['deadline_time'];
@@ -123,30 +106,7 @@ class _UpcomingDeadlineCardState extends State<UpcomingDeadlineCard> {
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    if (_hasError) {
-      return Card(
-        color: Colors.red.withOpacity(0.9),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        child: const ListTile(
-          leading: Icon(Icons.error, color: Colors.white),
-          title: Text(
-            "Terjadi kesalahan.",
-            style: TextStyle(
-              fontFamily: 'Poppins',
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-            ),
-          ),
-        ),
-      );
-    }
-
-    if (_deadlines.isEmpty) {
+    if (widget.deadlines.isEmpty) {
       return Card(
         color: const Color(0xFFDD78FF).withOpacity(0.9),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -164,23 +124,20 @@ class _UpcomingDeadlineCardState extends State<UpcomingDeadlineCard> {
         ),
       );
     }
-
-    // If there is more than one deadline, build a carousel
-    if (_deadlines.length > 1) {
+    
+    if (widget.deadlines.length > 1) {
       return SizedBox(
-        height: 95, // Constrain the height of the PageView
+        height: 95,
         child: PageView.builder(
           controller: _pageController,
-          itemCount: _deadlines.length,
+          itemCount: widget.deadlines.length,
           itemBuilder: (context, index) {
-            // Build each card inside the PageView
-            return _buildDeadlineCard(_deadlines[index]);
+            return _buildDeadlineCard(widget.deadlines[index]);
           },
         ),
       );
     }
-
-    // If there is only one deadline, show a single static card
-    return _buildDeadlineCard(_deadlines.first);
+    
+    return _buildDeadlineCard(widget.deadlines.first);
   }
 }

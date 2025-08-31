@@ -395,35 +395,30 @@ class DbHelper {
     );
   }
 
-  Future<List<Map<String, dynamic>>> getUpcomingDeadlines() async {
+  Future<List<Map<String, dynamic>>> getUpcomingDeadlines({
+    int limit = 5,
+  }) async {
     final db = await database;
-    final now = DateTime.now();
 
-    // ambil semua course yang belum selesai dan belum dihapus
-    final List<Map<String, dynamic>> result = await db.query(
-      'courses',
-      where: 'is_done = ? AND is_deleted = ?',
-      whereArgs: [0, 0],
-    );
+    const String sql = '''
+    SELECT *
+    FROM courses
+    WHERE
+      is_done = 0 AND
+      is_deleted = 0 AND
+      (deadline_day || ' ' || deadline_time) > datetime('now', 'localtime')
+    ORDER BY
+      (deadline_day || ' ' || deadline_time) ASC
+    LIMIT ?
+  ''';
 
-    // filter deadline < 24 jam
-    List<Map<String, dynamic>> upcoming = [];
-    for (var row in result) {
-      try {
-        final deadlineDay = row['deadline_day'] as String;
-        final deadlineTime = row['deadline_time'] as String;
-        final deadline = DateTime.parse("$deadlineDay $deadlineTime");
-
-        final diff = deadline.difference(now);
-        if (diff.inHours > 0 && diff.inHours <= 24) {
-          upcoming.add(row);
-        }
-      } catch (e) {
-        debugPrint("Error parsing deadline: $e");
-      }
+    try {
+      final List<Map<String, dynamic>> result = await db.rawQuery(sql, [limit]);
+      return result;
+    } catch (e) {
+      debugPrint("Error fetching upcoming deadlines: $e");
+      return []; // Kembalikan list kosong jika terjadi error
     }
-
-    return upcoming;
   }
 
   Future<int> getJumlahBelumSelesai() async {
@@ -434,13 +429,13 @@ class DbHelper {
     return Sqflite.firstIntValue(result) ?? 0;
   }
 
-Future<int> getJumlahSelesai() async {
-  final db = await database;
-  final result = await db.rawQuery(
-    "SELECT COUNT(*) as jumlah FROM courses WHERE is_done = 1",
-  );
-  return Sqflite.firstIntValue(result) ?? 0;
-}
+  Future<int> getJumlahSelesai() async {
+    final db = await database;
+    final result = await db.rawQuery(
+      "SELECT COUNT(*) as jumlah FROM courses WHERE is_done = 1",
+    );
+    return Sqflite.firstIntValue(result) ?? 0;
+  }
 
   Future<int> getTotalTugas() async {
     final db = await database;

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '/helpers/dbhelper.dart';
 import '/helpers/session_manager.dart';
+import '/components/courseDetail.dart'; 
 
 class CoursesPage extends StatefulWidget {
   @override
@@ -29,7 +30,7 @@ class _CoursesPageState extends State<CoursesPage> {
   }
 
   void _refreshCourses() {
-    setState(() {});
+    setState(() {}); // Cukup panggil setState untuk memicu FutureBuilder membangun ulang
   }
 
   @override
@@ -140,7 +141,9 @@ class _CoursesPageState extends State<CoursesPage> {
                             course['name'] ?? 'Tanpa Nama',
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
-                              decoration: isDone ? TextDecoration.lineThrough : TextDecoration.none,
+                              decoration: isDone
+                                  ? TextDecoration.lineThrough
+                                  : TextDecoration.none,
                             ),
                           ),
                           subtitle: Column(
@@ -163,13 +166,18 @@ class _CoursesPageState extends State<CoursesPage> {
                             padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                           ),
                           onTap: () async {
-                            final result = await showCourseDialog(
+                            // ===== PERUBAHAN UTAMA ADA DI SINI =====
+                            // Panggil fungsi baru untuk menampilkan bottom sheet
+                            final bool result = await showCourseDetail(
                               context,
                               course['course_id'],
                             );
+                            
+                            // Jika hasilnya true (ada perubahan data), refresh list
                             if (result == true) {
                               _refreshCourses();
                             }
+                            // ==========================================
                           },
                         ),
                       );
@@ -183,75 +191,4 @@ class _CoursesPageState extends State<CoursesPage> {
       ),
     );
   }
-}
-
-Future<bool?> showCourseDialog(
-  BuildContext context,
-  String courseId,
-) async {
-  final DbHelper dbHelper = DbHelper();
-  final course = await dbHelper.getCourseById(
-    courseId,
-  );
-
-  if (course == null) {
-    return null;
-  }
-  
-  final isDone = (course['status'] ?? 'Belum') == 'Selesai';
-
-  return await showDialog<bool>(
-    context: context,
-    builder: (BuildContext ctx) {
-      return AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        title: Text('Detail Tugas'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Nama: ${course['name']}', style: TextStyle(fontWeight: FontWeight.bold)),
-            SizedBox(height: 8),
-            Text('Deskripsi: ${course['description'] ?? '-'}'),
-            SizedBox(height: 8),
-            Text(
-              'Deadline: ${course['deadline_day']} ${course['deadline_time']}',
-            ),
-            SizedBox(height: 8),
-            Row(
-              children: [
-                Text('Status: '),
-                Chip(
-                  label: Text(
-                    course['status'],
-                    style: TextStyle(color: Colors.white),
-                  ),
-                   backgroundColor: isDone ? Colors.green : Colors.orange,
-                ),
-              ],
-            ),
-          ],
-        ),
-        actions: [
-          if (!isDone)
-          TextButton.icon(
-            icon: Icon(Icons.check_circle, color: Colors.green),
-            label: Text('Selesai', style: TextStyle(color: Colors.green)),
-            onPressed: () async {
-              await dbHelper.markCourseAsDone(courseId);
-              Navigator.of(ctx).pop(true);
-            },
-          ),
-          TextButton.icon(
-            icon: Icon(Icons.delete, color: Colors.red),
-            label: Text('Hapus', style: TextStyle(color: Colors.red)),
-            onPressed: () async {
-              await dbHelper.softDeleteCourse(courseId);
-              Navigator.of(ctx).pop(true);
-            },
-          ),
-        ],
-      );
-    },
-  );
 }

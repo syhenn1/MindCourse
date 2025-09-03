@@ -1,4 +1,5 @@
 import 'package:MindCourse/models/course.dart';
+import '/components/courseDetail.dart'; 
 import 'package:flutter/material.dart';
 import 'package:MindCourse/helpers/dbhelper.dart';
 import 'package:uuid/uuid.dart';
@@ -31,140 +32,6 @@ class _SubjectPageState extends State<SubjectPage> {
       setState(() {});
     }
   }
-
-  /// Menampilkan dialog konfirmasi sebelum melakukan aksi
-  Future<bool?> _showConfirmationDialog({
-    required BuildContext context,
-    required String title,
-    required String content,
-  }) async {
-    return showDialog<bool>(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text(title),
-          content: Text(content),
-          actions: <Widget>[
-            TextButton(
-              child: const Text('Tidak'),
-              onPressed: () {
-                Navigator.of(context).pop(false);
-              },
-            ),
-            TextButton(
-              child: const Text('Ya'),
-              onPressed: () {
-                Navigator.of(context).pop(true);
-              },
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  /// Menampilkan dialog dengan detail lengkap dari sebuah course
-  void _showCourseDetailsDialog(Course course) {
-    final bool isDone = course.isDone == 1;
-
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-          title: Text(course.name, style: TextStyle(fontWeight: FontWeight.bold)),
-          content: SingleChildScrollView(
-            child: ListBody(
-              children: <Widget>[
-                _buildDetailRow(Icons.description, 'Deskripsi',
-                    course.description.isNotEmpty ? course.description : 'Tidak ada deskripsi.'),
-                _buildDetailRow(Icons.calendar_today, 'Deadline',
-                    '${course.deadlineDay} - ${course.deadlineTime}'),
-                _buildDetailRow(Icons.info_outline, 'Status', course.status),
-                if (isDone && course.doneDate.isNotEmpty)
-                  _buildDetailRow(Icons.check_circle, 'Selesai Pada',
-                      DateFormat('yyyy-MM-dd HH:mm').format(DateTime.parse(course.doneDate))),
-              ],
-            ),
-          ),
-          actions: <Widget>[
-            // Tombol Hapus
-            IconButton(
-              icon: Icon(Icons.delete_outline, color: Colors.red),
-              onPressed: () async {
-                final confirmed = await _showConfirmationDialog(
-                  context: context,
-                  title: 'Konfirmasi Hapus',
-                  content: 'Anda yakin ingin menghapus tugas "${course.name}"?',
-                );
-                if (confirmed == true) {
-                  Navigator.of(context).pop(); // Tutup dialog detail
-                  await dbHelper.softDeleteCourse(course.courseId!);
-                  _refreshCourses();
-                  if (mounted) {
-                     ScaffoldMessenger.of(context).showSnackBar(
-                       SnackBar(content: Text('${course.name} telah dihapus.')));
-                  }
-                }
-              },
-            ),
-            const Spacer(),
-            TextButton(
-              child: const Text('Tutup'),
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-            ),
-            // Tombol Tandai Selesai (hanya muncul jika belum selesai)
-            if (!isDone)
-              ElevatedButton(
-                child: const Text('Tandai Selesai'),
-                onPressed: () async {
-                   final confirmed = await _showConfirmationDialog(
-                    context: context,
-                    title: 'Konfirmasi Selesai',
-                    content: 'Anda yakin ingin menyelesaikan tugas "${course.name}"?',
-                  );
-                  if (confirmed == true) {
-                    Navigator.of(context).pop(); // Tutup dialog detail
-                    await dbHelper.markCourseAsDone(course.courseId!);
-                    _refreshCourses();
-                    if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('${course.name} ditandai selesai.')));
-                    }
-                  }
-                },
-              ),
-          ],
-        );
-      },
-    );
-  }
-
-  Widget _buildDetailRow(IconData icon, String title, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, size: 20, color: Theme.of(context).primaryColor),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title, style: TextStyle(fontWeight: FontWeight.bold)),
-                const SizedBox(height: 4),
-                Text(value),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
 
   @override
   Widget build(BuildContext context) {
@@ -281,9 +148,14 @@ class _SubjectPageState extends State<SubjectPage> {
                             ),
                             subtitle: Text(
                                 'Deadline: ${course.deadlineDay} ${course.deadlineTime}'),
-                            // --- PERUBAHAN UTAMA: onTap sekarang menampilkan dialog detail ---
-                            onTap: () {
-                              _showCourseDetailsDialog(course);
+                            onTap: () async {
+                              final result = await showCourseDetail(
+                                context,
+                                course.courseId!,
+                              );
+                              if (result == true) {
+                                _refreshCourses();
+                              }
                             },
                           ),
                         );
